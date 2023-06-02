@@ -1,3 +1,5 @@
+import sys
+
 import screen_ocr
 import pyautogui
 import time
@@ -9,21 +11,36 @@ def start_fishing():
     pyautogui.keyUp('E')
 
 
+def trim_message(fish_message):
+    return fish_message.replace(" ", "").lower()
+
+
 if __name__ == '__main__':
+    debug = False
+    if len(sys.argv) > 1 and sys.argv[1] == '--debug':
+        print("[DEBUG] On")
+        debug = True
+
     x, y = pyautogui.size()
 
     # Those are coordinates of the interaction box containing fishing related messages
     # This script reads messages from the box using OCR
-    box_x1 = int(x * 0.436)
-    box_x2 = int(x * 0.572)
-    box_y1 = int(y * 0.659)
-    box_y2 = int(y * 0.701)
-
+    box_x1 = int(x * 0.400)
+    box_x2 = int(x * 0.600)
+    box_y1 = int(y * 0.625)
+    box_y2 = int(y * 0.725)
+    
+    if debug:
+        print(f"[DEBUG] OCR box coordinates: {box_x1}, {box_x2}, {box_y1}, {box_y2}")
+    
     ocr_reader = screen_ocr.Reader.create_quality_reader()
     while True:
         results = ocr_reader.read_screen(bounding_box=(box_x1, box_y1, box_x2, box_y2)).as_string()
 
-        if "Go" in results and "Fishing" in results:
+        if debug:
+            print(f"[DEBUG] pond wait input: {results}")
+
+        if "fishing" in trim_message(results):
             print("Pond detected. Launching loop")
 
             time.sleep(2)
@@ -40,7 +57,12 @@ if __name__ == '__main__':
     while True:
         results = ocr_reader.read_screen(bounding_box=(box_x1, box_y1, box_x2, box_y2)).as_string()
 
-        if "Catch" in results:
+        if debug:
+            print(f"[DEBUG] pond catch input: {results}")
+
+        trimmed_message = trim_message(results)
+
+        if "catch" in trimmed_message:
             print("Fish Caught!")
             pyautogui.keyDown('E')
             time.sleep(0.1)
@@ -50,6 +72,11 @@ if __name__ == '__main__':
             time.sleep(3)
 
             # And restart fishing
+            start_fishing()
+
+        elif "fishing" in trimmed_message:
+            print("Restarting")
+
             start_fishing()
 
         # Timeout between checking for the fish
